@@ -29,6 +29,8 @@ const getWeather = async (id) => {
   );
   const data = await res.json();
   emit("place-data", data);
+  searchTerm.results = null;
+  searchTerm.query = "";
 };
 </script>
 
