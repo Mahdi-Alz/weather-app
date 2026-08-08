@@ -7,20 +7,43 @@ const searchTerm = reactive({
   query: "",
   timeout: null,
   results: null,
+  loading: false,
+  error: null,
 });
+
 const handleSearch = () => {
   clearTimeout(searchTerm.timeout);
+  searchTerm.error = null;
+
+  if (!searchTerm.query.length) {
+    searchTerm.results = null;
+    searchTerm.loading = false;
+    return;
+  }
+
+  searchTerm.loading = true;
   searchTerm.timeout = setTimeout(async () => {
-    if (searchTerm.query.length) {
+    try {
       const res = await fetch(
         `http://api.weatherapi.com/v1/search.json?key=5805c27e61e94d369c674729262306&q=${searchTerm.query}`,
       );
-      const data = await res.json();
-      searchTerm.results = data;
-    } else {
-      searchTerm.results = null;
+      if (!res.ok) throw new Error("search failed");
+      searchTerm.results = await res.json();
+    } catch {
+      searchTerm.results = [];
+      searchTerm.error = "Couldn't reach the weather service. Try again.";
+    } finally {
+      searchTerm.loading = false;
     }
   }, 500);
+};
+
+const clearSearch = () => {
+  clearTimeout(searchTerm.timeout);
+  searchTerm.query = "";
+  searchTerm.results = null;
+  searchTerm.error = null;
+  searchTerm.loading = false;
 };
 
 const getWeather = async (id) => {
@@ -29,45 +52,80 @@ const getWeather = async (id) => {
   );
   const data = await res.json();
   emit("place-data", data);
-  searchTerm.results = null;
-  searchTerm.query = "";
+  clearSearch();
 };
 </script>
 
 <template>
-  <div>
-    <!-- search field -->
-    <form>
-      <div
-        class="bg-white border border-indigo-600/30 rounded-lg shadow-lg flex items-center"
+  <div class="relative mx-auto w-full max-w-xl">
+    <form @submit.prevent>
+      <label
+        class="input input-lg w-full items-center gap-3 rounded-box border-base-300 bg-base-200/80 shadow-lg shadow-black/20 backdrop-blur focus-within:border-primary/60"
       >
-        <span
-          class="flex items-center justify-center p-2 shrink-0 text-indigo-600"
+        <svg
+          class="size-5 shrink-0 text-base-content/50"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </span>
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
 
         <input
           type="text"
-          placeholder="Search for a place"
-          class="rounded-r-lg p-2 border-0 outline-0 focus:ring-2 focus:ring-indigo-600 ring-inset w-full"
+          placeholder="Search for a city…"
+          class="grow"
           v-model="searchTerm.query"
           @input="handleSearch"
         />
-      </div>
+
+        <span v-if="searchTerm.loading" class="loading loading-spinner loading-sm text-base-content/40"></span>
+        <button
+          v-else-if="searchTerm.query"
+          type="button"
+          class="btn btn-ghost btn-circle btn-xs text-base-content/50 hover:text-base-content"
+          @click="clearSearch"
+          aria-label="Clear search"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </label>
     </form>
+
     <!-- search suggestions -->
-    <div class="bg-white my-2 rounded-lg shadow-lg">
-      <div v-if="searchTerm.results">
-        <div v-for="place in searchTerm.results" :key="place.id">
-          <button
-            class="px-3 my-2 hover:text-indigo-600 hover:font-bold transition-all duration-200 ease-in-out w-full text-left"
-            @click="getWeather(place.id)"
+    <ul
+      v-if="searchTerm.results !== null"
+      class="menu absolute z-10 mt-2 w-full rounded-box border border-base-300 bg-base-200/95 p-2 shadow-xl shadow-black/30 backdrop-blur"
+    >
+      <li v-if="searchTerm.error" class="px-3 py-2 text-sm text-error">
+        {{ searchTerm.error }}
+      </li>
+      <li v-else-if="searchTerm.results.length === 0" class="px-3 py-2 text-sm text-base-content/50">
+        No places found.
+      </li>
+      <li v-for="place in searchTerm.results" :key="place.id">
+        <button type="button" class="rounded-field" @click="getWeather(place.id)">
+          <svg
+            class="size-4 shrink-0 text-base-content/40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            {{ place.name }}, {{ place.region }}, {{ place.country }}
-          </button>
-        </div>
-      </div>
-    </div>
+            <path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11Z" />
+            <circle cx="12" cy="10" r="2.5" />
+          </svg>
+          <span class="truncate">{{ place.name }}<span class="text-base-content/50">, {{ place.region }}, {{ place.country }}</span></span>
+        </button>
+      </li>
+    </ul>
   </div>
 </template>
