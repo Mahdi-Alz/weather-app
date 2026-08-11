@@ -3,6 +3,8 @@ import { reactive } from "vue";
 
 const emit = defineEmits(["place-data"]);
 
+const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
+
 const searchTerm = reactive({
   query: "",
   timeout: null,
@@ -25,7 +27,7 @@ const handleSearch = () => {
   searchTerm.timeout = setTimeout(async () => {
     try {
       const res = await fetch(
-        `http://api.weatherapi.com/v1/search.json?key=5805c27e61e94d369c674729262306&q=${searchTerm.query}`,
+        `http://api.weatherapi.com/v1/search.json?key=${API_KEY}&q=${searchTerm.query}`,
       );
       if (!res.ok) throw new Error("search failed");
       searchTerm.results = await res.json();
@@ -48,7 +50,7 @@ const clearSearch = () => {
 
 const getWeather = async (id) => {
   const res = await fetch(
-    `http://api.weatherapi.com/v1/forecast.json?key=5805c27e61e94d369c674729262306&q=id:${id}&days=3&aqi=no&alerts=no`,
+    `http://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=id:${id}&days=3&aqi=no&alerts=no`,
   );
   const data = await res.json();
   emit("place-data", data);
