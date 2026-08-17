@@ -2,7 +2,7 @@
   <rect width="32" height="32" rx="7" fill="#0b1220" />
   <circle cx="12" cy="12.5" r="5.5" fill="#ffb454" />
   <g fill="#eef1f8">
-    <circle cx="11.5" cy="20" r="4.5" />
+    <circle cx="11.5" cy="20.5" r="4.5" />
     <circle cx="18.5" cy="19" r="6" />
     <rect x="9.5" y="19" width="11" height="6" rx="3" />
   </g>
